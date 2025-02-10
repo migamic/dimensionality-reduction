@@ -76,7 +76,7 @@ class ForceScheme:
         self.n_components_ = n_components
         self.embedding_ = None
 
-    def _fit(self, X, y, distance_function):
+    def _fit(self, X, distance_function):
         # create a distance matrix
         distance_matrix = create_distance_matrix(X, distance_function)
         size = len(X)
@@ -85,13 +85,7 @@ class ForceScheme:
         np.random.seed(self.seed_)
 
         # randomly initialize the projection
-        if y is None:
-            self.embedding_ = np.random.random((size, self.n_components_))
-        else:
-            if np.shape(y)[1] == self.n_components_:
-                self.embedding_ = y
-            else:
-                raise ValueError('The n_components should be equal to the number of dimensions of the input embedding.')
+        self.embedding_ = np.random.random((size, self.n_components_))
 
         # create random index
         index = np.random.permutation(size)
@@ -112,8 +106,8 @@ class ForceScheme:
 
         return self.embedding_
 
-    def fit_transform(self, X, y=None, distance_function=distance.euclidean):
-        return self._fit(X, y, distance_function)
+    def fit_transform(self, X, distance_function=distance.euclidean):
+        return self._fit(X, distance_function)
 
-    def fit(self, X, y=None, distance_function=distance.euclidean):
-        return self._fit(X, y, distance_function)
+    def fit(self, X, distance_function=distance.euclidean):
+        return self._fit(X, distance_function)
