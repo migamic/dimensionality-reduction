@@ -92,8 +92,10 @@ class ForceScheme:
 
         # iterate until max_it or if the error does not change more than the tolerance
         error = math.inf
+        learning_rate = self.learning_rate0_
         for k in range(self.max_it_):
-            learning_rate = self.learning_rate0_ * math.pow((1 - k / self.max_it_), self.decay_)
+            # learning_rate = self.learning_rate0_ * math.pow((1 - k / self.max_it_), self.decay_)
+            learning_rate *= self.decay_
             new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_components_)
 
             if math.fabs(new_error - error) < self.tolerance_:
@@ -104,7 +106,7 @@ class ForceScheme:
         # setting the min to (0,0)
         self.embedding_ = self.embedding_ - np.amin(self.embedding_, axis=0)
 
-        return self.embedding_
+        return self.embedding_, k+1
 
     def fit_transform(self, X, distance_function=distance.euclidean):
         return self._fit(X, distance_function)
