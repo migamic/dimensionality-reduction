@@ -21,10 +21,10 @@ def run_test(datasets, output_csv=False, plot=False):
     if output_csv:
         pass
 
-    print('   dataset | iterations |    time(s) |     stress | sh di corr')
-    print('--------------------------------------------------------------')
+    print('  idx |    dataset |   n_pts |   n_dim | iterations | time(s) |     stress |      corr.')
+    print('---------------------------------------------------------------------------------------')
 
-    for data in datasets:
+    for i, data in enumerate(datasets):
         X = np.load(f'data/{data}/X.npy')
         y = np.load(f'data/{data}/y.npy')
 
@@ -32,7 +32,7 @@ def run_test(datasets, output_csv=False, plot=False):
         X = preprocessing.StandardScaler().fit_transform(X)
 
         start = timer()
-        X_2D = ForceScheme(max_it=10).fit_transform(X)
+        X_2D = ForceScheme(max_it=1).fit_transform(X)
         end = timer()
         elapsed_seconds = end-start
 
@@ -48,7 +48,7 @@ def run_test(datasets, output_csv=False, plot=False):
 
         if output_csv:
             pass
-        print(f"{data:>10} | {iters:>10} | {elapsed_seconds:>10.2f} | {stress:>10.2f} | {sd_corr:>10.2f}")
+        print(f"{i:>2}/{len(datasets):>2} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {iters:>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f}")
 
         if plot:
             plt.figure()
@@ -62,7 +62,7 @@ def main():
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['har', 'orl', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(small_data, plot=False)
+    run_test(datasets, plot=False)
 
 
 if __name__ == "__main__":
