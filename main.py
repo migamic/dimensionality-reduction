@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial.distance import euclidean
-from scipy.spatial import distance_matrix
+from scipy.spatial.distance import euclidean, pdist, squareform
 
 from timeit import default_timer as timer
 from sklearn import preprocessing
@@ -22,18 +21,18 @@ def export_csv(filename, line, append=True):
 
 
 # Returns a 2D symmetric array of size X*X
-def compute_distances(X):
-    # squared_norms = np.sum(X**2, axis=1).reshape(-1, 1)
-    # distance_matrix = np.sqrt(squared_norms + squared_norms.T - 2 * np.dot(X, X.T))
-    # return distance_matrix
-    return distance_matrix(X,X)
+def compute_distances(X, flattened=False):
+    if flattened:
+        return pdist(X)
+    else:
+        return squareform(pdist(X))
 
 
 def run_test(datasets, params, output_csv=None, plot=False):
 
     export_csv(output_csv, 'idx,dataset,n_pts,n_dim,iterations,max_iteration,time,stress,correlation', append=False)
-    print('  idx |    dataset |   n_pts |   n_dim | iterations | time(s) |     stress |      corr.')
-    print('---------------------------------------------------------------------------------------')
+    print('  idx |    dataset |   n_pts |   n_dim | iterations | time(s) |     stress |  correlat. | continuity |  trustwor.')
+    print('-----------------------------------------------------------------------------------------------------------------')
 
     for i, data in enumerate(datasets):
         X = np.load(f'data/{data}/X.npy')
@@ -52,15 +51,17 @@ def run_test(datasets, params, output_csv=None, plot=False):
         elapsed_seconds = end-start
 
         # Compute metrics
-        # TODO: maybe this is wrong. is D_high supposed to be a matrix? or a flattened vector?
-        D_high = compute_distances(X)
-        D_low = compute_distances(X_2D)
-        stress = metrics.pq_normalized_stress(D_high, D_low)
-        # sd_corr = metrics.pq_shepard_diagram_correlation(D_high, D_low) # TODO returns a matrix. How do I print this?
-        sd_corr = 0
+        D_high_list = compute_distances(X, flattened=True)
+        D_low_list = compute_distances(X_2D, flattened=True)
+        D_high_matrix = compute_distances(X, flattened=False)
+        D_low_matrix = compute_distances(X_2D, flattened=False)
+        stress = metrics.pq_normalized_stress(D_high_list, D_low_list)
+        sd_corr = metrics.pq_shepard_diagram_correlation(D_high_list, D_low_list)
+        continuity = metrics.continuity(D_high_matrix, D_low_matrix, 5)
+        trustworthiness = metrics.trustworthiness(D_high_matrix, D_low_matrix, 5)
 
         export_csv(output_csv, f'{i},{data},{X.shape[0]},{X.shape[1]},{iters},{10},{elapsed_seconds},{stress},{sd_corr}')
-        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f}")
+        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity:>10.4f} | {trustworthiness:>10.4f}")
 
         if plot:
             plt.figure()
@@ -73,12 +74,12 @@ def main():
     params = {
         'max_it' : 200,
         'lr'     : 0.5,
-        'decay'  : 0.8
+        'decay'  : 0.9
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
-    small_data = ['har', 'orl', 'fmd', 'sms', 'svhn']
+    small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
     run_test(small_data, params, plot=False, output_csv=None)
 

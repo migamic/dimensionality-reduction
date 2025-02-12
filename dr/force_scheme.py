@@ -94,7 +94,6 @@ class ForceScheme:
         error = math.inf
         learning_rate = self.learning_rate0_
         for k in range(self.max_it_):
-            # learning_rate = self.learning_rate0_ * math.pow((1 - k / self.max_it_), self.decay_)
             learning_rate *= self.decay_
             new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_components_)
 
