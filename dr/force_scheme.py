@@ -6,35 +6,24 @@ from numba import njit, prange
 from scipy.spatial import distance
 
 
-# @njit(parallel=False, fastmath=False)
-def create_distance_matrix(X, distance_function):
-    size = len(X)
-    distance_matrix = np.zeros(int(size * (size + 1) / 2), dtype=np.float32)
-
-    k = 0
-    for i in range(size):
-        for j in range(i, size):
-            distance_matrix[k] = distance_function(X[i], X[j])
-            k = k + 1
-
-    return distance_matrix
-
-
 @njit(parallel=True, fastmath=False)
 def move(ins1, distance_matrix, projection, learning_rate):
-    size = len(projection)
-    total = len(distance_matrix)
+    n_points = len(projection)
     error = 0
 
-    for ins2 in prange(size):
+    for ins2 in prange(n_points):
         if ins1 != ins2:
+
+            # Distance in the projection
             v = projection[ins2] - projection[ins1]
             d_proj = max(np.linalg.norm(v), 0.0001)
 
-            # getting te index in the distance matrix and getting the value
-            r = (ins1 + ins2 - math.fabs(ins1 - ins2)) / 2  # min(i,j)
-            s = (ins1 + ins2 + math.fabs(ins1 - ins2)) / 2  # max(i,j)
-            d_original = distance_matrix[int(total - ((size - r) * (size - r + 1) / 2) + (s - r))]
+            # Distance in the original space
+            i,j = ins1,ins2
+            if i > j:
+                i,j = j,i
+            idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
+            d_original = distance_matrix[idx]
 
             # calculate the movement
             delta = (d_original - d_proj)
@@ -43,19 +32,19 @@ def move(ins1, distance_matrix, projection, learning_rate):
             # moving
             projection[ins2] += learning_rate * delta * (v / d_proj)
 
-    return error / size
+    return error / n_points
 
 
 @njit(parallel=False, fastmath=False)
 def iteration(index, distance_matrix, projection, learning_rate, n_components):
-    size = len(projection)
+    n_points = len(projection)
     error = 0
 
-    for i in range(size):
+    for i in range(n_points):
         ins1 = index[i]
         error += move(ins1, distance_matrix, projection, learning_rate)
 
-    return error / size
+    return error / n_points
 
 
 class ForceScheme:
@@ -78,17 +67,17 @@ class ForceScheme:
 
     def _fit(self, X, distance_function):
         # create a distance matrix
-        distance_matrix = create_distance_matrix(X, distance_function)
-        size = len(X)
+        distance_matrix = distance.pdist(X, metric=distance_function)
+        n_points = len(X)
 
         # set the random seed
         np.random.seed(self.seed_)
 
         # randomly initialize the projection
-        self.embedding_ = np.random.random((size, self.n_components_))
+        self.embedding_ = np.random.random((n_points, self.n_components_))
 
         # create random index
-        index = np.random.permutation(size)
+        index = np.random.permutation(n_points)
 
         # iterate until max_it or if the error does not change more than the tolerance
         error = math.inf

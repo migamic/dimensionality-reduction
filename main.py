@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial.distance import euclidean, pdist, squareform
+from scipy.spatial import distance
 
 from timeit import default_timer as timer
 from sklearn import preprocessing
@@ -23,9 +23,9 @@ def export_csv(filename, line, append=True):
 # Returns a 2D symmetric array of size X*X
 def compute_distances(X, flattened=False):
     if flattened:
-        return pdist(X)
+        return distance.pdist(X)
     else:
-        return squareform(pdist(X))
+        return distance.squareform(distance.pdist(X))
 
 
 def run_test(datasets, params, output_csv=None, plot=False):
