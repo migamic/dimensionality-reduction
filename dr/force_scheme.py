@@ -55,7 +55,8 @@ class ForceScheme:
                  decay=0.95,
                  tolerance=0.00001,
                  seed=7,
-                 n_components=2):
+                 n_components=2,
+                 random_order=True):
 
         self.max_it_ = max_it
         self.learning_rate0_ = learning_rate0
@@ -64,6 +65,7 @@ class ForceScheme:
         self.seed_ = seed
         self.n_components_ = n_components
         self.embedding_ = None
+        self.random_order_ = random_order
 
     def _fit(self, X, distance_function):
         # create a distance matrix
@@ -76,8 +78,11 @@ class ForceScheme:
         # randomly initialize the projection
         self.embedding_ = np.random.random((n_points, self.n_components_))
 
-        # create random index
-        index = np.random.permutation(n_points)
+        if self.random_order_:
+            # create random index
+            index = np.random.permutation(n_points)
+        else:
+            index = np.arange(n_points)
 
         # iterate until max_it or if the error does not change more than the tolerance
         error = math.inf

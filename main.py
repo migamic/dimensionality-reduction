@@ -28,11 +28,11 @@ def compute_distances(X, flattened=False):
         return distance.squareform(distance.pdist(X))
 
 
-def run_test(datasets, params, output_csv=None, plot=False):
+def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False):
 
     export_csv(output_csv, 'idx,dataset,n_pts,n_dim,iterations,max_iteration,time,stress,correlation', append=False)
-    print('  idx |    dataset |   n_pts |   n_dim | iterations | time(s) |     stress |  correlat. | continuity |  trustwor.')
-    print('-----------------------------------------------------------------------------------------------------------------')
+    print('  idx |    dataset |   n_pts |   n_dim | n_cls | iterations | time(s) |     stress |  correlat. | continuity |  trustwor.')
+    print('-------------------------------------------------------------------------------------------------------------------------')
 
     for i, data in enumerate(datasets):
         X = np.load(f'data/{data}/X.npy')
@@ -45,7 +45,8 @@ def run_test(datasets, params, output_csv=None, plot=False):
         X_2D, iters = ForceScheme(
             max_it=params['max_it'],
             learning_rate0=params['lr'],
-            decay=params['decay']
+            decay=params['decay'],
+            random_order=params['rand_ord']
         ).fit_transform(X)
         end = timer()
         elapsed_seconds = end-start
@@ -61,27 +62,31 @@ def run_test(datasets, params, output_csv=None, plot=False):
         trustworthiness = metrics.trustworthiness(D_high_matrix, D_low_matrix, 5)
 
         export_csv(output_csv, f'{i},{data},{X.shape[0]},{X.shape[1]},{iters},{10},{elapsed_seconds},{stress},{sd_corr}')
-        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity:>10.4f} | {trustworthiness:>10.4f}")
+        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity:>10.4f} | {trustworthiness:>10.4f}")
 
-        if plot:
+        if show_plot or output_png is not None:
             plt.figure()
             plt.scatter(X_2D[:, 0], X_2D[:, 1], c=y, cmap='Set1', edgecolors='face', linewidths=0.5, s=4)
             plt.grid(linestyle='dotted')
-            plt.show()
+            if output_png is not None:
+                plt.savefig(f'plots/{data}_{output_png}.png')
+            if show_plot:
+                plt.show()
 
 
 def main():
     params = {
-        'max_it' : 200,
-        'lr'     : 0.5,
-        'decay'  : 0.9
+        'max_it'   : 200,
+        'lr'       : 0.5,
+        'decay'    : 0.9,
+        'rand_ord' : False
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(small_data, params, plot=False, output_csv=None)
+    run_test(datasets, params, output_csv=None, output_png='origord', show_plot=False)
 
 
 if __name__ == "__main__":
