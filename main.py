@@ -46,7 +46,8 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
             max_it=params['max_it'],
             learning_rate0=params['lr'],
             decay=params['decay'],
-            random_order=params['rand_ord']
+            random_order=params['rand_ord'],
+            move_strat=params['move_strat']
         ).fit_transform(X)
         end = timer()
         elapsed_seconds = end-start
@@ -77,17 +78,18 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
 
 def main():
     params = {
-        'max_it'   : 200,
-        'lr'       : 0.5,
-        'decay'    : 0.9,
-        'rand_ord' : False
+        'max_it'     : 200,
+        'lr'         : 0.5,
+        'decay'      : 0.9,
+        'rand_ord'   : True,
+        'move_strat' : 'sqrt' # all, sqrt
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(small_data, params, output_csv=None, output_png='origord', show_plot=False)
+    run_test(small_data, params, output_csv=None, output_png=None, show_plot=False)
 
 
 if __name__ == "__main__":

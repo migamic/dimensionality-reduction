@@ -40,8 +40,7 @@ def iteration(index, distance_matrix, projection, learning_rate, n_components):
     n_points = len(projection)
     error = 0
 
-    for i in range(n_points):
-        ins1 = index[i]
+    for ins1 in index:
         error += move(ins1, distance_matrix, projection, learning_rate)
 
     return error / n_points
@@ -56,7 +55,8 @@ class ForceScheme:
                  tolerance=0.00001,
                  seed=7,
                  n_components=2,
-                 random_order=True):
+                 random_order=True,
+                 move_strat='all'):
 
         self.max_it_ = max_it
         self.learning_rate0_ = learning_rate0
@@ -66,6 +66,7 @@ class ForceScheme:
         self.n_components_ = n_components
         self.embedding_ = None
         self.random_order_ = random_order
+        self.move_strat_ = move_strat
 
     def _fit(self, X, distance_function):
         # create a distance matrix
@@ -78,16 +79,17 @@ class ForceScheme:
         # randomly initialize the projection
         self.embedding_ = np.random.random((n_points, self.n_components_))
 
-        if self.random_order_:
-            # create random index
-            index = np.random.permutation(n_points)
-        else:
-            index = np.arange(n_points)
+        # Subset of points to move per iteration
+        n_moving = n_points if self.move_strat_ == 'all' else int(math.sqrt(n_points))
+        index = np.arange(n_points)[:n_points]
 
         # iterate until max_it or if the error does not change more than the tolerance
         error = math.inf
         learning_rate = self.learning_rate0_
         for k in range(self.max_it_):
+            if self.random_order_:
+                # New permutation each iteration
+                index = np.random.RandomState(seed=k).permutation(n_points)[:n_moving]
             learning_rate *= self.decay_
             new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_components_)
 
