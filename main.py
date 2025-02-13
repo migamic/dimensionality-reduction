@@ -13,10 +13,10 @@ def export_csv(filename, line, append=True):
     if filename is None:
         return
     if append:
-        with open(filename, "a") as f:
+        with open('csvs/'+filename+'.csv', "a") as f:
             f.write(line+'\n')
     else:
-        with open(filename, "w") as f:
+        with open('csvs/'+filename+'.csv', "w") as f:
             f.write(line+'\n')
 
 
@@ -30,7 +30,7 @@ def compute_distances(X, flattened=False):
 
 def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False):
 
-    export_csv(output_csv, 'idx,dataset,n_pts,n_dim,iterations,max_iteration,time,stress,correlation', append=False)
+    export_csv(output_csv, 'idx,dataset,n_pts,n_dim,iterations,max_iteration,time,stress,correlation,continuity_k3,continuity_k5,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k5,trustworthiness_k7,trustworthiness_k11', append=False)
     print('  idx |    dataset |   n_pts |   n_dim | n_cls | iterations | time(s) |     stress |  correlat. | continuity |  trustwor.')
     print('-------------------------------------------------------------------------------------------------------------------------')
 
@@ -58,11 +58,11 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
         D_low_matrix = compute_distances(X_2D, flattened=False)
         stress = metrics.pq_normalized_stress(D_high_list, D_low_list)
         sd_corr = metrics.pq_shepard_diagram_correlation(D_high_list, D_low_list)
-        continuity = metrics.continuity(D_high_matrix, D_low_matrix, 5)
-        trustworthiness = metrics.trustworthiness(D_high_matrix, D_low_matrix, 5)
+        continuity = {k:metrics.continuity(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
+        trustworthiness = {k:metrics.trustworthiness(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
 
-        export_csv(output_csv, f'{i},{data},{X.shape[0]},{X.shape[1]},{iters},{10},{elapsed_seconds},{stress},{sd_corr}')
-        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity:>10.4f} | {trustworthiness:>10.4f}")
+        export_csv(output_csv, f"{i},{data},{X.shape[0]},{X.shape[1]},{iters},{params['max_it']},{elapsed_seconds},{stress},{sd_corr},{','.join([str(continuity[c]) for c in continuity])},{','.join([str(trustworthiness[t]) for t in trustworthiness])}")
+        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity[5]:>10.4f} | {trustworthiness[5]:>10.4f}")
 
         if show_plot or output_png is not None:
             plt.figure()
@@ -86,7 +86,7 @@ def main():
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(datasets, params, output_csv=None, output_png='origord', show_plot=False)
+    run_test(small_data, params, output_csv='test', output_png='origord', show_plot=False)
 
 
 if __name__ == "__main__":
