@@ -67,6 +67,7 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
         if show_plot or output_png is not None:
             plt.figure()
             plt.scatter(X_2D[:, 0], X_2D[:, 1], c=y, cmap='Set1', edgecolors='face', linewidths=0.5, s=4)
+            plt.axis('square')
             plt.grid(linestyle='dotted')
             if output_png is not None:
                 plt.savefig(f'plots/{data}_{output_png}.png')
@@ -86,7 +87,7 @@ def main():
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(small_data, params, output_csv='test', output_png='origord', show_plot=False)
+    run_test(small_data, params, output_csv=None, output_png='origord', show_plot=False)
 
 
 if __name__ == "__main__":
