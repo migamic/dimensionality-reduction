@@ -43,7 +43,7 @@ def iteration(index, distance_matrix, projection, learning_rate, n_components):
     for ins1 in index:
         error += move(ins1, distance_matrix, projection, learning_rate)
 
-    return error / n_points
+    return error / len(index)
 
 
 class ForceScheme:
@@ -56,6 +56,7 @@ class ForceScheme:
                  seed=7,
                  n_components=2,
                  random_order=True,
+                 err_win=1,
                  move_strat='all'):
 
         self.max_it_ = max_it
@@ -66,6 +67,7 @@ class ForceScheme:
         self.n_components_ = n_components
         self.embedding_ = None
         self.random_order_ = random_order
+        self.err_win_ = err_win
         self.move_strat_ = move_strat
 
     def _fit(self, X, distance_function):
@@ -84,7 +86,7 @@ class ForceScheme:
         index = np.arange(n_points)[:n_points]
 
         # iterate until max_it or if the error does not change more than the tolerance
-        error = math.inf
+        error = [math.inf]*self.err_win_
         learning_rate = self.learning_rate0_
         for k in range(self.max_it_):
             if self.random_order_:
@@ -93,10 +95,10 @@ class ForceScheme:
             learning_rate *= self.decay_
             new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_components_)
 
-            if math.fabs(new_error - error) < self.tolerance_:
+            if math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
                 break
 
-            error = new_error
+            error = error[1:]+[new_error]
 
         # setting the min to (0,0)
         self.embedding_ = self.embedding_ - np.amin(self.embedding_, axis=0)
