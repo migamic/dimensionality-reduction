@@ -30,9 +30,12 @@ def compute_distances(X, flattened=False):
 
 def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False):
 
-    export_csv(output_csv, 'idx,dataset,n_pts,n_dim,iterations,max_iteration,time,stress,correlation,continuity_k3,continuity_k5,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k5,trustworthiness_k7,trustworthiness_k11', append=False)
-    print('  idx |    dataset |   n_pts |   n_dim | n_cls | iterations | time(s) |     stress |  correlat. | continuity |  trustwor.')
-    print('-------------------------------------------------------------------------------------------------------------------------')
+    export_csv(output_csv, f"idx,dataset,n_pts,n_dim,iterations,{','.join([k for k in params])},time,stress,correlation,continuity_k3,continuity_k5,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k5,trustworthiness_k7,trustworthiness_k11", append=False)
+    print('  ' + ' | '.join([f'{k}: {params[k]}' for k in params]))
+    header = '  idx |    dataset |   n_pts |   n_dim | n_cls | iterations | time(s) |  stress |   corr. |   cont. |  trust.'
+    print('-'*len(header))
+    print(header)
+    print('-'*len(header))
 
     for i, data in enumerate(datasets):
         X = np.load(f'data/{data}/X.npy')
@@ -47,7 +50,9 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
             learning_rate0=params['lr'],
             decay=params['decay'],
             random_order=params['rand_ord'],
-            move_strat=params['move_strat']
+            err_win=params['err_win'],
+            move_strat=params['move_strat'],
+            n_anchors=params['n_anchors']
         ).fit_transform(X)
         end = timer()
         elapsed_seconds = end-start
@@ -62,8 +67,8 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
         continuity = {k:metrics.continuity(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
         trustworthiness = {k:metrics.trustworthiness(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
 
-        export_csv(output_csv, f"{i},{data},{X.shape[0]},{X.shape[1]},{iters},{params['max_it']},{elapsed_seconds},{stress},{sd_corr},{','.join([str(continuity[c]) for c in continuity])},{','.join([str(trustworthiness[t]) for t in trustworthiness])}")
-        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>10.4f} | {sd_corr:>10.4f} | {continuity[5]:>10.4f} | {trustworthiness[5]:>10.4f}")
+        export_csv(output_csv, f"{i},{data},{X.shape[0]},{X.shape[1]},{iters},{','.join([str(params[k]) for k in params])},{elapsed_seconds},{stress},{sd_corr},{','.join([str(continuity[c]) for c in continuity])},{','.join([str(trustworthiness[t]) for t in trustworthiness])}")
+        print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>7.4f} | {sd_corr:>7.4f} | {continuity[5]:>7.4f} | {trustworthiness[5]:>7.4f}")
 
         if show_plot or output_png is not None:
             plt.figure()
@@ -80,9 +85,11 @@ def main():
     params = {
         'max_it'     : 200,
         'lr'         : 0.5,
-        'decay'      : 0.9,
+        'decay'      : 0.95,
         'rand_ord'   : True,
-        'move_strat' : 'sqrt' # all, sqrt
+        'err_win'    : 10,
+        'move_strat' : 'all', # all, sqrt
+        'n_anchors'  : 1
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets

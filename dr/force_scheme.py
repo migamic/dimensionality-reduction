@@ -7,41 +7,49 @@ from scipy.spatial import distance
 
 
 @njit(parallel=True, fastmath=False)
-def move(ins1, distance_matrix, projection, learning_rate):
+def move(anchors, distance_matrix, projection, learning_rate):
     n_points = len(projection)
     error = 0
 
     for ins2 in prange(n_points):
-        if ins1 != ins2:
+        if ins2 not in anchors:
+            force = np.zeros(2, dtype='float64')
+            for ins1 in anchors:
 
-            # Distance in the projection
-            v = projection[ins2] - projection[ins1]
-            d_proj = max(np.linalg.norm(v), 0.0001)
+                # Distance in the projection
+                v = projection[ins2] - projection[ins1]
+                d_proj = max(np.linalg.norm(v), 0.0001)
 
-            # Distance in the original space
-            i,j = ins1,ins2
-            if i > j:
-                i,j = j,i
-            idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
-            d_original = distance_matrix[idx]
+                # Distance in the original space
+                i,j = ins1,ins2
+                if i > j:
+                    i,j = j,i
+                idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
+                d_original = distance_matrix[idx]
 
-            # calculate the movement
-            delta = (d_original - d_proj)
-            error += math.fabs(delta)
+                # calculate the movement
+                delta = (d_original - d_proj)
+                error += math.fabs(delta)
+
+                # comput force
+                force += delta * (v / d_proj)
 
             # moving
-            projection[ins2] += learning_rate * delta * (v / d_proj)
+            projection[ins2] += learning_rate * force/len(anchors)
 
     return error / n_points
 
 
-@njit(parallel=False, fastmath=False)
-def iteration(index, distance_matrix, projection, learning_rate, n_components):
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
+def iteration(index, distance_matrix, projection, learning_rate, n_anchors):
     n_points = len(projection)
     error = 0
 
-    for ins1 in index:
-        error += move(ins1, distance_matrix, projection, learning_rate)
+    for points in chunker(index, n_anchors):
+        error += move(points, distance_matrix, projection, learning_rate)
 
     return error / len(index)
 
@@ -57,7 +65,8 @@ class ForceScheme:
                  n_components=2,
                  random_order=True,
                  err_win=1,
-                 move_strat='all'):
+                 move_strat='all',
+                 n_anchors=1):
 
         self.max_it_ = max_it
         self.learning_rate0_ = learning_rate0
@@ -69,6 +78,7 @@ class ForceScheme:
         self.random_order_ = random_order
         self.err_win_ = err_win
         self.move_strat_ = move_strat
+        self.n_anchors = n_anchors
 
     def _fit(self, X, distance_function):
         # create a distance matrix
@@ -93,7 +103,7 @@ class ForceScheme:
                 # New permutation each iteration
                 index = np.random.RandomState(seed=k).permutation(n_points)[:n_moving]
             learning_rate *= self.decay_
-            new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_components_)
+            new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_anchors)
 
             if math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
                 break
