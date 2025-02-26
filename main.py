@@ -53,7 +53,8 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
             err_win=params['err_win'],
             move_strat=params['move_strat'],
             n_anchors=params['n_anchors'],
-            normalize=params['normalize']
+            normalize=params['normalize'],
+            comp_dmat = params['comp_dmat']
         ).fit_transform(X)
         end = timer()
         elapsed_seconds = end-start
@@ -89,16 +90,17 @@ def main():
         'decay'      : 0.95,
         'rand_ord'   : True,
         'err_win'    : 10,
-        'move_strat' : 'sqrt', # all, sqrt
-        'n_anchors'  : 2,
-        'normalize'  : False
+        'move_strat' : 'all', # all, sqrt
+        'n_anchors'  : 1,
+        'normalize'  : False,
+        'comp_dmat'  : False
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(['har'], params, output_csv=None, output_png=None, show_plot=True)
+    run_test(['cifar10'], params, output_csv=None, output_png=None, show_plot=True)
 
 
 if __name__ == "__main__":

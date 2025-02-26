@@ -7,7 +7,7 @@ from scipy.spatial import distance
 
 
 @njit(parallel=True, fastmath=False)
-def move(anchors, distance_matrix, projection, learning_rate):
+def move(anchors, projection, learning_rate, X, dmat):
     n_points = len(projection)
     error = 0
 
@@ -20,12 +20,16 @@ def move(anchors, distance_matrix, projection, learning_rate):
                 v = projection[ins2] - projection[ins1]
                 d_proj = max(np.linalg.norm(v), 0.0001)
 
-                # Distance in the original space
-                i,j = ins1,ins2
-                if i > j:
-                    i,j = j,i
-                idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
-                d_original = distance_matrix[idx]
+                if dmat is not None:
+                    # Distance in the original space
+                    i,j = ins1,ins2
+                    if i > j:
+                        i,j = j,i
+                    idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
+                    d_original = dmat[idx]
+                else:
+                    # Compute the distance on-the-fly
+                    d_original = np.sqrt(np.sum((X[ins1] - X[ins2]) ** 2))
 
                 # calculate the movement
                 delta = (d_original - d_proj)
@@ -44,12 +48,12 @@ def chunker(seq, size):
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
 
-def iteration(index, distance_matrix, projection, learning_rate, n_anchors):
+def iteration(index, projection, lr, n_anchors, X=None, dmat=None):
     n_points = len(projection)
     error = 0
 
     for points in chunker(index, n_anchors):
-        error += move(points, distance_matrix, projection, learning_rate)
+        error += move(points, projection, lr, X, dmat)
 
     return error / len(index)
 
@@ -67,7 +71,8 @@ class ForceScheme:
                  err_win=1,
                  move_strat='all',
                  n_anchors=1,
-                 normalize=False):
+                 normalize=False,
+                 comp_dmat=True):
 
         self.max_it_ = max_it
         self.learning_rate0_ = learning_rate0
@@ -81,13 +86,24 @@ class ForceScheme:
         self.move_strat_ = move_strat
         self.n_anchors = n_anchors
         self.normalize_ = normalize
+        self.comp_dmat_ = comp_dmat
 
-    def _fit(self, X, distance_function):
-        # create a distance matrix
-        distance_matrix = distance.pdist(X, metric=distance_function)
-        if self.normalize_:
-            distance_matrix /= np.amax(distance_matrix)
+    def _fit(self, X, dfun):
+
+        # Parameter checks
+        if not self.comp_dmat_:
+            assert dfun == distance.euclidean, 'Only euclidean distance is supported unless precomputing distances'
+            assert not self.normalize_, 'Normalization is only available for precomputed distance matrix'
+
         n_points = len(X)
+
+        if self.comp_dmat_:
+            # create a distance matrix
+            dmat = distance.pdist(X, metric=dfun)
+            if self.normalize_:
+                dmat /= np.amax(dmat)
+        else:
+            dmat = None
 
         # set the random seed
         np.random.seed(self.seed_)
@@ -101,7 +117,7 @@ class ForceScheme:
 
         # iterate until max_it or if the error does not change more than the tolerance
         error = [math.inf]*self.err_win_
-        learning_rate = self.learning_rate0_
+        lr = self.learning_rate0_
 
         for k in range(self.max_it_):
 
@@ -113,8 +129,8 @@ class ForceScheme:
                 self.embedding_ -= np.amin(self.embedding_, axis=0)
                 self.embedding_ /= np.amax(self.embedding_)
 
-            learning_rate *= self.decay_
-            new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_anchors)
+            lr *= self.decay_
+            new_error = iteration(index, self.embedding_, lr, self.n_anchors, X, dmat)
 
             if math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
                 break
