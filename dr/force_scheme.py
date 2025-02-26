@@ -66,7 +66,8 @@ class ForceScheme:
                  random_order=True,
                  err_win=1,
                  move_strat='all',
-                 n_anchors=1):
+                 n_anchors=1,
+                 normalize=False):
 
         self.max_it_ = max_it
         self.learning_rate0_ = learning_rate0
@@ -79,10 +80,13 @@ class ForceScheme:
         self.err_win_ = err_win
         self.move_strat_ = move_strat
         self.n_anchors = n_anchors
+        self.normalize_ = normalize
 
     def _fit(self, X, distance_function):
         # create a distance matrix
         distance_matrix = distance.pdist(X, metric=distance_function)
+        if self.normalize_:
+            distance_matrix /= np.amax(distance_matrix)
         n_points = len(X)
 
         # set the random seed
@@ -98,10 +102,17 @@ class ForceScheme:
         # iterate until max_it or if the error does not change more than the tolerance
         error = [math.inf]*self.err_win_
         learning_rate = self.learning_rate0_
+
         for k in range(self.max_it_):
+
             if self.random_order_:
                 # New permutation each iteration
                 index = np.random.RandomState(seed=k).permutation(n_points)[:n_moving]
+
+            if self.normalize_:
+                self.embedding_ -= np.amin(self.embedding_, axis=0)
+                self.embedding_ /= np.amax(self.embedding_)
+
             learning_rate *= self.decay_
             new_error = iteration(index, distance_matrix, self.embedding_, learning_rate, self.n_anchors)
 
@@ -111,7 +122,7 @@ class ForceScheme:
             error = error[1:]+[new_error]
 
         # setting the min to (0,0)
-        self.embedding_ = self.embedding_ - np.amin(self.embedding_, axis=0)
+        self.embedding_ -= np.amin(self.embedding_, axis=0)
 
         return self.embedding_, k+1
 
