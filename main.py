@@ -20,15 +20,20 @@ def export_csv(filename, line, append=True):
             f.write(line+'\n')
 
 
-# Returns a 2D symmetric array of size X*X
-def compute_distances(X, flattened=False):
+# Returns a 2D symmetric array of size N*N
+def compute_distances(X, flattened=False, normalize=True):
+    if normalize:
+        # Normalize the positions, so it's the same as the FS code
+        # Necessary to compute stress correctly. Other metrics are unaffected
+        X -= np.amin(X, axis=0)
+        X /= np.amax(X)
     if flattened:
         return distance.pdist(X)
     else:
         return distance.squareform(distance.pdist(X))
 
 
-def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False):
+def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False, compute_metrics=True):
 
     export_csv(output_csv, f"idx,dataset,n_pts,n_dim,iterations,{','.join([k for k in params])},time,stress,correlation,continuity_k3,continuity_k5,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k5,trustworthiness_k7,trustworthiness_k11", append=False)
     print('  ' + ' | '.join([f'{k}: {params[k]}' for k in params]))
@@ -59,15 +64,20 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
         end = timer()
         elapsed_seconds = end-start
 
-        # Compute metrics
-        D_high_list = compute_distances(X, flattened=True)
-        D_low_list = compute_distances(X_2D, flattened=True)
-        D_high_matrix = compute_distances(X, flattened=False)
-        D_low_matrix = compute_distances(X_2D, flattened=False)
-        stress = metrics.pq_normalized_stress(D_high_list, D_low_list)
-        sd_corr = metrics.pq_shepard_diagram_correlation(D_high_list, D_low_list)
-        continuity = {k:metrics.continuity(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
-        trustworthiness = {k:metrics.trustworthiness(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
+        if compute_metrics:
+            D_high_list = compute_distances(X, flattened=True)
+            D_low_list = compute_distances(X_2D, flattened=True)
+            D_high_matrix = compute_distances(X, flattened=False)
+            D_low_matrix = compute_distances(X_2D, flattened=False)
+            stress = metrics.pq_normalized_stress(D_high_list, D_low_list)
+            sd_corr = metrics.pq_shepard_diagram_correlation(D_high_list, D_low_list)
+            continuity = {k:metrics.continuity(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
+            trustworthiness = {k:metrics.trustworthiness(D_high_matrix, D_low_matrix, k) for k in [3,5,7,11]}
+        else:
+            stress = -1
+            sd_corr = -1
+            continuity = {k:-1 for k in [3,5,7,11]}
+            trustworthiness = {k:-1 for k in [3,5,7,11]}
 
         export_csv(output_csv, f"{i},{data},{X.shape[0]},{X.shape[1]},{iters},{','.join([str(params[k]) for k in params])},{elapsed_seconds},{stress},{sd_corr},{','.join([str(continuity[c]) for c in continuity])},{','.join([str(trustworthiness[t]) for t in trustworthiness])}")
         print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(iters)+'/'+str(params['max_it']):>10} | {elapsed_seconds:>7.2f} | {stress:>7.4f} | {sd_corr:>7.4f} | {continuity[5]:>7.4f} | {trustworthiness[5]:>7.4f}")
@@ -85,22 +95,23 @@ def run_test(datasets, params, output_csv=None, output_png=None, show_plot=False
 
 def main():
     params = {
-        'max_it'     : 200,
+        'max_it'     : 1,
         'lr'         : 0.5,
-        'decay'      : 0.95,
+        'decay'      : 0.9,
         'rand_ord'   : True,
-        'err_win'    : 10,
+        'err_win'    : 5,
         'move_strat' : 'all', # all, sqrt
         'n_anchors'  : 1,
         'normalize'  : False,
-        'comp_dmat'  : False
+        'comp_dmat'  : True
     }
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
+    datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
     big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
     small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
-    datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    run_test(['cifar10'], params, output_csv=None, output_png=None, show_plot=True)
+    med_data = sorted(list(set(datasets)-set(big_data)-set(small_data)))
+    run_test(med_data, params, output_csv='test', output_png=None, show_plot=False, compute_metrics=True)
 
 
 if __name__ == "__main__":
