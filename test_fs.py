@@ -35,7 +35,7 @@ def compute_distances(X, flattened=False, normalize=True):
 
 def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show_plot=False, compute_metrics=True):
 
-    export_csv(output_csv, f"idx,dataset,n_pts,n_dim,seed,iterations,{','.join([k for k in params])},time,stress,correlation,continuity_k3,continuity_k5,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k5,trustworthiness_k7,trustworthiness_k11", append=False)
+    export_csv(output_csv, f"idx,dataset,n_pts,n_dim,seed,iterations,{','.join([k for k in params])},time,stress,correlation,continuity_k3,continuity_k7,continuity_k7,continuity_k11,trustworthiness_k3,trustworthiness_k7,trustworthiness_k7,trustworthiness_k11", append=False)
     print('  ' + ' | '.join([f'{k}: {params[k]}' for k in params]) + ' | #runs: ' + str(len(seeds)))
     header = '  idx |    dataset |   n_pts |   n_dim | n_cls | iterations | time(s) |  stress |   corr. |   cont. |  trust.'
     print('-'*len(header))
@@ -95,8 +95,8 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
             results['time'].append(elapsed_seconds)
             results['stress'].append(stress)
             results['sd_corr'].append(sd_corr)
-            results['continuity'].append(continuity[5])
-            results['trustworthiness'].append(trustworthiness[5])
+            results['continuity'].append(continuity[7])
+            results['trustworthiness'].append(trustworthiness[7])
 
         print(f"{str(i+1)+'/'+str(len(datasets)):>5} | {data[:10]:>10} | {X.shape[0]:>7} | {X.shape[1]:>7} | {len(np.unique(y)):>5} | {str(round(np.average(results['iters']),2))+'/'+str(params['max_it']):>10} | {np.average(results['time']):>7.2f} | {np.average(results['stress']):>7.4f} | {np.average(results['sd_corr']):>7.4f} | {np.average(results['continuity']):>7.4f} | {np.average(results['trustworthiness']):>7.4f}")
 
