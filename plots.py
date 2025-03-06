@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 df1 = pd.read_csv('csvs/default.csv')
 df2 = pd.read_csv('csvs/gradient.csv')
 df3 = pd.read_csv('csvs/scalable.csv')
+metric = 'stress'
 
 df1['setup'] = 'Default'
 df2['setup'] = 'Gradient'
@@ -24,12 +25,12 @@ for i, dataset in enumerate(datasets):
     
     sns.boxplot(
         x='setup',
-        y='stress',
+        y=metric,
         data=dataset_df,
         ax=axes[i],
         width=0.8,
         linewidth=0.5,
-        flierprops=dict(markerfacecolor='red', marker='o', markersize=7),
+        flierprops=dict(markerfacecolor='red', marker='o', markersize=1),
         hue='setup',
         palette=boxplot_colors,
         legend=False
@@ -45,7 +46,7 @@ for i, dataset in enumerate(datasets):
     for spine in axes[i].spines.values():
         spine.set_visible(False)
 
-    max_stress = df['stress'].max()
+    max_stress = df[metric].max()
     axes[i].set_ylim(bottom=0, top=max_stress * 1.1)
 
 plt.subplots_adjust(wspace=0.1)
