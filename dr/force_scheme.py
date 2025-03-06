@@ -132,7 +132,7 @@ class ForceScheme:
             lr *= self.decay_
             new_error = iteration(index, self.embedding_, lr, self.n_anchors, X, dmat)
 
-            if math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
+            if self.err_win_ > 0 and math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
                 break
 
             error = error[1:]+[new_error]
