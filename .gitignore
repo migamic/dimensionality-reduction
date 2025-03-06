@@ -3,3 +3,6 @@ data
 venv
 plots
 csvs
+*.png
+*.ods
+*.zip
