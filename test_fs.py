@@ -1,3 +1,5 @@
+import os
+import zipfile
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import distance
@@ -8,10 +10,28 @@ from dr.force_scheme import ForceScheme
 import metrics
 
 
+
+def ensure_data_directory():
+    data_dir = 'data'
+    zip_file = 'data.zip'
+
+    if os.path.isdir(data_dir):
+        return
+
+    if os.path.isfile(zip_file):
+        with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+            zip_ref.extractall()
+    else:
+        raise FileNotFoundError(f"'{data_dir}' directory not found and '{zip_file}' does not exist.")
+
+
 # Appends the line to the CSV file
 def export_csv(filename, line, append=True):
     if filename is None:
         return
+
+    os.makedirs('csvs', exist_ok=True)
+
     if append:
         with open('csvs/'+filename+'.csv', "a") as f:
             f.write(line+'\n')
@@ -112,24 +132,26 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
 
 
 def main():
+    # Available parameters
+    # For parameter differences between FS, GFS, SFS, check run_batch.py
     params = {
         'max_it'     : 200,
         'lr'         : 0.1,
         'decay'      : 0.9,
         'rand_ord'   : True,
         'err_win'    : 5,
-        'move_strat' : 'all', # all, sqrt
+        'move_strat' : 'sqrt', # all, sqrt
         'n_anchors'  : 1,
         'normalize'  : False,
-        'comp_dmat'  : True
+        'comp_dmat'  : False
     }
+
+    ensure_data_directory()
 
     # imdb,sentiment have a similar structure as protein artifacts datasets
     datasets = ['bank', 'cifar10', 'cnae9', 'coil20', 'epileptic', 'fashion_mnist', 'fmd', 'har', 'hatespeech', 'hiva', 'imdb', 'orl', 'secom', 'seismic', 'sentiment', 'sms', 'spambase', 'svhn']
-    big_data = ['cifar10', 'epileptic', 'hiva', 'imdb', 'spambase']
-    small_data = ['orl', 'har', 'fmd', 'sms', 'svhn']
-    med_data = sorted(list(set(datasets)-set(big_data)-set(small_data)))
-    run_test(datasets, params, output_csv='test', output_png=None, show_plot=False, compute_metrics=True, seeds=[0,1,2,3])
+    # datasets = ['fourier'] # Example of a large dataset. Set compute_metrics=False if using this
+    run_test(datasets, params, show_plot=True, compute_metrics=True)
 
 
 if __name__ == "__main__":
