@@ -88,7 +88,7 @@ class ForceScheme:
         self.normalize_ = normalize
         self.comp_dmat_ = comp_dmat
 
-    def _fit(self, X, dfun):
+    def _fit(self, X, dfun=distance.euclidean):
 
         # Parameter checks
         if not self.comp_dmat_:
@@ -143,7 +143,7 @@ class ForceScheme:
         return self.embedding_, k+1
 
     def fit_transform(self, X, distance_function=distance.euclidean):
-        return self._fit(X, distance_function)
+        return self._fit(X, distance_function)[0]
 
     def fit(self, X, distance_function=distance.euclidean):
-        return self._fit(X, distance_function)
+        return self._fit(X, distance_function)[0]

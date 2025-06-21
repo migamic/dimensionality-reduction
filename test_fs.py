@@ -66,7 +66,6 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
         X = np.load(f'data/{data}/X.npy')
         y = np.load(f'data/{data}/y.npy')
 
-        # TODO: should we standardize? Does it affect the metrics?
         X = preprocessing.StandardScaler().fit_transform(X)
 
         results = {
@@ -90,7 +89,7 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
                 normalize=params['normalize'],
                 comp_dmat = params['comp_dmat'],
                 seed = seed
-            ).fit_transform(X)
+            )._fit(X)
             end = timer()
             elapsed_seconds = end-start
 
