@@ -54,16 +54,16 @@ def iteration(index, projection, lr, X=None, dmat=None):
 class ForceScheme:
 
     def __init__(self,
-                 max_it=100,
-                 learning_rate0=0.5,
-                 decay=0.95,
+                 max_it=50,
+                 learning_rate0=0.1,
+                 decay=1,
                  tolerance=0.00001,
-                 seed=7,
+                 seed=2025,
                  n_components=2,
-                 random_order=True,
-                 err_win=1,
+                 random_order=False,
+                 err_win=0,
                  move_strat='all',
-                 normalize=False,
+                 normalize=True,
                  comp_dmat=True):
 
         self.max_it_ = max_it
@@ -138,3 +138,23 @@ class ForceScheme:
 
     def fit(self, X, distance_function=distance.euclidean):
         return self._fit(X, distance_function)[0]
+
+
+class GFS(ForceScheme):
+    def __init__(self,
+                 max_it=200,
+                 learning_rate0=0.1,
+                 decay=0.9,
+                 random_order=True,
+                 err_win=10,
+                 **kwargs):
+        super().__init__(max_it=max_it, learning_rate0=learning_rate0, decay=decay, random_order=random_order, err_win=err_win, **kwargs)
+
+
+class SFS(GFS):
+    def __init__(self,
+                 move_strat='sqrt',
+                 normalize=False,
+                 comp_dmat=False,
+                 **kwargs):
+        super().__init__(move_strat=move_strat, normalize=normalize, comp_dmat=comp_dmat, **kwargs)
