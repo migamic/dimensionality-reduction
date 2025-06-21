@@ -62,7 +62,7 @@ def test_18_datasets():
 
     seeds = list(range(10))
     for setup in ['FS', 'GFS', 'SFS']:
-        run_test(datasets, SETUP[setup], output_csv=setup, output_png=setup, compute_metrics=True, seeds=seeds)
+        run_test(datasets, SETUPS[setup], output_csv=setup, output_png=setup, compute_metrics=True, seeds=seeds)
         print()
 
 
@@ -81,8 +81,8 @@ def big_dataset():
 
 
 def main():
-    # test_18_datasets()
-    # island_points_example()
+    test_18_datasets()
+    island_points_example()
     big_dataset()
 
 

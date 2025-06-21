@@ -2,9 +2,9 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-df1 = pd.read_csv('csvs/default.csv')
-df2 = pd.read_csv('csvs/gradient.csv')
-df3 = pd.read_csv('csvs/scalable.csv')
+df1 = pd.read_csv('csvs/FS.csv')
+df2 = pd.read_csv('csvs/GFS.csv')
+df3 = pd.read_csv('csvs/SFS.csv')
 metric = 'stress'
 
 df1['setup'] = 'Default'
@@ -36,12 +36,15 @@ for i, dataset in enumerate(datasets):
         legend=False
     )
 
-    axes[i].set_title(i+1, fontsize=12)
+    label_name = dataset[:4]
+    if len(dataset) > 4:
+        label_name += '.'
+    axes[i].set_title(label_name, fontsize=20)
     axes[i].set_xlabel(None)
     axes[i].set_ylabel(None)
     axes[i].set_xticklabels([])
     axes[i].grid(True, linestyle='-', alpha=0.6, axis='y')
-    axes[i].tick_params(axis='y', labelsize=10)
+    axes[i].tick_params(axis='y', labelsize=20)
 
     for spine in axes[i].spines.values():
         spine.set_visible(False)
