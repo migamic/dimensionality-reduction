@@ -6,7 +6,7 @@ from scipy.spatial import distance
 
 from timeit import default_timer as timer
 from sklearn import preprocessing
-from dr.force_scheme import ForceScheme
+from force_scheme import ForceScheme
 import metrics
 
 
