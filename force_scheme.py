@@ -7,53 +7,46 @@ from scipy.spatial import distance
 
 
 @njit(parallel=True, fastmath=False)
-def move(anchors, projection, learning_rate, X, dmat):
+def move(idx_a, projection, learning_rate, X, dmat):
     n_points = len(projection)
     error = 0
 
-    for ins2 in prange(n_points):
-        if ins2 not in anchors:
-            force = np.zeros(2, dtype='float64')
-            for ins1 in anchors:
+    for idx_b in prange(n_points):
+        if idx_b != idx_a:
+            # Distance in the projection
+            v = projection[idx_b] - projection[idx_a]
+            d_proj = max(np.linalg.norm(v), 0.0001)
 
-                # Distance in the projection
-                v = projection[ins2] - projection[ins1]
-                d_proj = max(np.linalg.norm(v), 0.0001)
+            if dmat is not None:
+                # Distance in the original space
+                i,j = idx_a,idx_b
+                if i > j:
+                    i,j = j,i
+                idx_dist = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
+                d_original = dmat[idx_dist]
+            else:
+                # Compute the distance on-the-fly
+                d_original = np.sqrt(np.sum((X[idx_a] - X[idx_b]) ** 2))
 
-                if dmat is not None:
-                    # Distance in the original space
-                    i,j = ins1,ins2
-                    if i > j:
-                        i,j = j,i
-                    idx = int((i * n_points) - (i * (i + 1)) // 2 + (j - i - 1))
-                    d_original = dmat[idx]
-                else:
-                    # Compute the distance on-the-fly
-                    d_original = np.sqrt(np.sum((X[ins1] - X[ins2]) ** 2))
+            # Calculate the movement
+            delta = (d_original - d_proj)
+            error += math.fabs(delta)
 
-                # calculate the movement
-                delta = (d_original - d_proj)
-                error += math.fabs(delta)
+            # Compute force
+            force = delta * (v / d_proj)
 
-                # comput force
-                force += delta * (v / d_proj)
-
-            # moving
-            projection[ins2] += learning_rate * force/len(anchors)
+            # Move point
+            projection[idx_b] += learning_rate * force
 
     return error / n_points
 
 
-def chunker(seq, size):
-    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
-
-
-def iteration(index, projection, lr, n_anchors, X=None, dmat=None):
+def iteration(index, projection, lr, X=None, dmat=None):
     n_points = len(projection)
     error = 0
 
-    for points in chunker(index, n_anchors):
-        error += move(points, projection, lr, X, dmat)
+    for idx_a in index:
+        error += move(idx_a, projection, lr, X, dmat)
 
     return error / len(index)
 
@@ -70,7 +63,6 @@ class ForceScheme:
                  random_order=True,
                  err_win=1,
                  move_strat='all',
-                 n_anchors=1,
                  normalize=False,
                  comp_dmat=True):
 
@@ -84,7 +76,6 @@ class ForceScheme:
         self.random_order_ = random_order
         self.err_win_ = err_win
         self.move_strat_ = move_strat
-        self.n_anchors = n_anchors
         self.normalize_ = normalize
         self.comp_dmat_ = comp_dmat
 
@@ -130,7 +121,7 @@ class ForceScheme:
                 self.embedding_ /= np.amax(self.embedding_)
 
             lr *= self.decay_
-            new_error = iteration(index, self.embedding_, lr, self.n_anchors, X, dmat)
+            new_error = iteration(index, self.embedding_, lr, X, dmat)
 
             if self.err_win_ > 0 and math.fsum([math.fabs(e) for e in error])/self.err_win_- new_error < self.tolerance_:
                 break

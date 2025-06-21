@@ -85,7 +85,6 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
                 random_order=params['rand_ord'],
                 err_win=params['err_win'],
                 move_strat=params['move_strat'],
-                n_anchors=params['n_anchors'],
                 normalize=params['normalize'],
                 comp_dmat = params['comp_dmat'],
                 seed = seed
@@ -128,6 +127,7 @@ def run_test(datasets, params, seeds=[0], output_csv=None, output_png=None, show
                 plt.savefig(f'plots/{data}_{output_png}.png')
             if show_plot:
                 plt.show()
+            plt.close()
 
 
 def main():
@@ -140,7 +140,6 @@ def main():
         'rand_ord'   : True,
         'err_win'    : 5,
         'move_strat' : 'sqrt', # all, sqrt
-        'n_anchors'  : 1,
         'normalize'  : False,
         'comp_dmat'  : False
     }

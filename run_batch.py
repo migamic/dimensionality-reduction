@@ -9,7 +9,6 @@ SETUPS = {
         'rand_ord'   : False,
         'err_win'    : 0,
         'move_strat' : 'all',
-        'n_anchors'  : 1,
         'normalize'  : True,
         'comp_dmat'  : True
     },
@@ -21,7 +20,6 @@ SETUPS = {
         'rand_ord'   : False,
         'err_win'    : 0,
         'move_strat' : 'all',
-        'n_anchors'  : 1,
         'normalize'  : True,
         'comp_dmat'  : True
     },
@@ -33,7 +31,6 @@ SETUPS = {
         'rand_ord'   : True,
         'err_win'    : 10,
         'move_strat' : 'all',
-        'n_anchors'  : 1,
         'normalize'  : True,
         'comp_dmat'  : True
     },
@@ -45,7 +42,6 @@ SETUPS = {
         'rand_ord'   : True,
         'err_win'    : 10,
         'move_strat' : 'sqrt',
-        'n_anchors'  : 1,
         'normalize'  : False,
         'comp_dmat'  : False
     }
